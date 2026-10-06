@@ -7,7 +7,8 @@ browser-agent-proxy/*.exe
 *.out
 
 # Dependency vendor (we use go modules)
-vendor/
+/vendor/
+!chrome-extension/vendor/
 
 # Python
 __pycache__/

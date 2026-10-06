@@ -1,7 +1,7 @@
 /**
  * agent/llm.js
  * OpenAI-compatible API client + context window management.
- * Supports OpenRouter, OpenAI, Ollama — all use the same API shape.
+ * Supports OpenRouter, Groq, OpenAI, Ollama (Local AI), and Custom endpoints.
  */
 
 // ─── Config ────────────────────────────────────────────────────────────────────
@@ -10,38 +10,71 @@ export const PROVIDERS = {
   openrouter: {
     label: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1',
-    defaultModel: 'anthropic/claude-sonnet-4.6',
+    defaultModel: 'nvidia/nemotron-3.5-lightning:free',
+    requiresKey: true,
+  },
+  groq: {
+    label: 'Groq',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    defaultModel: 'openai/gpt-oss-120b',
     requiresKey: true,
   },
   openai: {
     label: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
-    defaultModel: 'gpt-5.4',
+    defaultModel: 'gpt-4o',
     requiresKey: true,
   },
   ollama: {
-    label: 'Ollama (local)',
+    label: 'Ollama (Local AI)',
     baseUrl: 'http://localhost:11434/v1',
-    defaultModel: 'gemma4:26b',
+    defaultModel: 'llama3.2',
+    requiresKey: false,
+  },
+  custom: {
+    label: 'Custom (OpenAI-compatible)',
+    baseUrl: 'http://localhost:8000/v1',
+    defaultModel: 'custom-model',
     requiresKey: false,
   },
 }
 
+export const DEFAULT_OPENROUTER_KEY = ''
+export const DEFAULT_GROQ_KEY = ''
+
 /**
  * Load LLM config from chrome.storage.local.
- * @returns {Promise<{provider, baseUrl, apiKey, model}>}
+ * @returns {Promise<{provider, baseUrl, apiKey, model, privacyMode, maxToolCalls, contextLength}>}
  */
 export async function loadLLMConfig() {
-  const data = await chrome.storage.local.get(['llmProvider', 'llmBaseUrl', 'llmApiKey', 'llmModel', 'maxToolCalls', 'llmContextLength'])
-  const provider = data.llmProvider || 'openrouter'
+  const data = await chrome.storage.local.get([
+    'llmProvider', 'llmBaseUrl', 'llmApiKey', 'llmModel',
+    'maxToolCalls', 'llmContextLength', 'privacyMode'
+  ])
+
+  let provider = data.llmProvider || 'openrouter'
+  const privacyMode = data.privacyMode || 'cloud' // 'cloud' | 'local' | 'ask'
+
+  // In Local AI mode, automatically prioritize local Ollama
+  if (privacyMode === 'local') {
+    provider = 'ollama'
+  }
+
   const providerDef = PROVIDERS[provider] || PROVIDERS.openrouter
   const maxToolCalls = data.maxToolCalls !== undefined ? Number(data.maxToolCalls) : 50
   const contextLength = Number(data.llmContextLength)
+  let apiKey = data.llmApiKey || ''
+  if (!apiKey) {
+    if (provider === 'openrouter') apiKey = DEFAULT_OPENROUTER_KEY
+    else if (provider === 'groq') apiKey = DEFAULT_GROQ_KEY
+  }
+
   return {
     provider,
-    baseUrl: data.llmBaseUrl || providerDef.baseUrl,
-    apiKey: data.llmApiKey || '',
-    model: data.llmModel || providerDef.defaultModel,
+    privacyMode,
+    baseUrl: (provider === data.llmProvider && data.llmBaseUrl) ? data.llmBaseUrl : providerDef.baseUrl,
+    apiKey,
+    model: (provider === data.llmProvider && data.llmModel) ? data.llmModel : providerDef.defaultModel,
     maxToolCalls: Number.isFinite(maxToolCalls) && maxToolCalls >= 0 ? maxToolCalls : 50,
     contextLength: Number.isFinite(contextLength) && contextLength > 0 ? contextLength : 128_000,
   }
@@ -142,16 +175,32 @@ export async function chatCompletion(messages, tools, config) {
     headers['Authorization'] = `Bearer ${config.apiKey}`
   }
 
+  // Preserve reasoning_details across message turns when present
+  const formattedMessages = messages.map(m => {
+    const formatted = { role: m.role, content: m.content }
+    if (m.reasoning_details) formatted.reasoning_details = m.reasoning_details
+    if (m.tool_calls) formatted.tool_calls = m.tool_calls
+    if (m.tool_call_id) formatted.tool_call_id = m.tool_call_id
+    if (m.name) formatted.name = m.name
+    return formatted
+  })
+
   const body = {
     model: config.model,
-    messages,
-    tools,
+    messages: formattedMessages,
     temperature: 0.3,
   }
 
-  // OpenRouter supports disabling reasoning tokens
+  if (tools && tools.length > 0) {
+    body.tools = tools
+  }
+
+  // OpenRouter reasoning handling
   if (config.provider === 'openrouter') {
-    body.reasoning = { effort: 'none', enabled: false, exclude: true }
+    const m = (config.model || '').toLowerCase()
+    if (m.includes('nemotron') || m.includes('r1') || m.includes('reasoning') || m.includes('thinking')) {
+      body.reasoning = { enabled: true }
+    }
   }
 
   const res = await fetch(url, {

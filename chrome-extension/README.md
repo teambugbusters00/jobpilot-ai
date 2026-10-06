@@ -1,88 +1,118 @@
-# Browser Agent — Chrome Extension
+# JobPilot AI — Chrome Extension
 
-Runs an AI agent directly inside Chrome. No external server required. Give it a prompt and it will navigate pages, run JavaScript, take screenshots, fetch URLs, and report back — all from within the extension.
+> **AI copilot for smarter job applications.**  
+> AI-powered browser copilot for job discovery, job analysis, resume tailoring, and application form assistance.
 
-Optionally connects to the [Browser Agent Proxy](../README.md) (Go) so external applications can also control the browser via REST API.
+Runs directly inside your daily Chrome browser as a Chrome Side Panel and extension service worker.
 
-## Features
+---
 
-- **In-extension LLM agent** — OpenRouter, OpenAI, or Ollama (any OpenAI-compatible API)
-- **Full tool set** — navigate, eval JS, screenshot + vision, fetch (no CORS), raw CDP commands
-- **Chat UI** — real-time conversation view with tool call bubbles and screenshot previews
-- **Scheduled tasks** — repeat on a timer via `chrome.alarms`
-- **History** — last 24 hours of runs, stored locally
-- **Browser Agent Proxy bridge** — optional WebSocket bridge to the Go relay server (preserved from v1)
+## Jobright.ai Feature Parity
 
-## Install (load unpacked)
+JobPilot AI replicates the entire feature set and workflow of **[Jobright.ai](https://jobright.ai/jobs)** directly inside your Chrome Side Panel:
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** and select this directory (`chrome-extension/`).
-3. Pin the extension icon for easy access.
+1. **Jobright Match Gauge & AI Fit Breakdown**:
+   - **Overall Match Score** (e.g. 91% Match) & Badge (`STRONG MATCH` / `GOOD MATCH`).
+   - **Detailed Alignment Breakdown**: Experience Level %, Skill Match %, Education Match %.
+   - **Role Badges**: Work mode (Remote/Hybrid/Onsite), Type, H1B Sponsor Likelihood (`✔ H1B Sponsor Likely`), Early Applicant (`⚡ Early applicant`), Applicant count estimate (`< 25 applicants`).
+   - **AI Fit Analysis Modal**: Detailed review of strengths, skill gaps, missing keywords, and recommendations.
 
-## Setup
+2. **AI Tools Suite (1-Click Action Cards)**:
+   - **✨ Customize Your Resume**: Generates role-tailored bullet points matching real experience to job requirements (never hallucinating).
+   - **✉️ Build Cover Letter**: Drafts a conversational, 3-paragraph tailored cover letter.
+   - **👍 Analyze How Well You Fit**: Comprehensive breakdown of strengths, gaps, and suggested improvements.
+   - **🎯 Role Interview Prep (NEW)**: Curates the top 4 behavioral and technical interview questions tailored to the company and tech stack with key concepts to mention.
+   - **🤝 Insider Connection & Referral**: Crafts high-conversion LinkedIn / email networking notes to ask employees or alumni for referrals.
 
-1. Open the extension **Options** page (right-click icon → Options, or click the icon).
-2. Go to **Settings** → set your LLM provider, base URL, model, and API key.
-3. Click **Test Connection** to verify.
+3. **⚡ Smart Job Autofill**:
+   - Detects all application form fields across Greenhouse, Lever, Ashby, Workable, Workday, and custom career portals.
+   - **Safe Auto-Fill**: Fills contact details, links (LinkedIn, GitHub, Portfolio), location, and candidate background safely.
+   - **High-Risk Question Isolation**: Flags sensitive questions (desired salary, visa sponsorship, legal self-ID) for human review.
+   - **Strict Human-in-the-Loop**: Never auto-submits. Presents an Application Review Screen; user always clicks Submit on the page.
 
-Supported providers:
+4. **🏢 Overview & AI Company Insights**:
+   - **Overview Tab**: Key description, role requirements, and technical keywords.
+   - **Company Insights Tab**: On-demand AI analysis of company mission, engineering culture, and tips for standing out.
 
-| Provider | Base URL | Notes |
-|----------|----------|-------|
-| OpenRouter | `https://openrouter.ai/api/v1` | Requires API key |
-| OpenAI | `https://api.openai.com/v1` | Requires API key |
-| Ollama | `http://localhost:11434/v1` | No key needed |
-| Custom | Any OpenAI-compatible URL | — |
+5. **📊 Applications Tracker**:
+   - Filter jobs by **All**, **Liked ❤️**, **Applied 🚀**, and **Analyzed 🔍**.
+   - Track application status, date, and calculated fit score.
+   - 1-click status transitions (e.g. Mark as Applied).
 
-## Usage
+6. **📄 Local Resume Parsing & 👤 Profile Management**:
+   - Parses PDF, DOCX, TXT, MD locally inside Chrome via bundled `pdfjs` and `mammoth` (no external servers).
+   - Truthful extraction of skills, education, and experience without fabrication.
+   - Candidate profile editor with instant persistence in `chrome.storage.local`.
 
-### Quick Run
+---
 
-Options page → type a prompt → **Open Chat**. A chat window opens and the agent starts immediately.
+## Installation (Load Unpacked)
 
-### Scheduled Tasks
+1. Open Chrome and navigate to `chrome://extensions`.
+2. Turn ON **Developer mode** (top right switch).
+3. Click **Load unpacked** (top left).
+4. Select the `chrome-extension/` directory.
+5. Click the extension icon or open the Side Panel to start using **JobPilot AI**.
 
-Options page → **Add New Task** → set a name, prompt, and interval (0 = manual only). Click **Run** on any task to open a chat window and run it now.
+---
 
-### Chat Window
+## Setup & Configuration
 
-- Live tool call and result bubbles as the agent works
-- Screenshots are displayed inline
-- **Stop** button aborts the run at any time
-- Reopen a chat window for a background run via the **Active Runs** card or **History → View Chat**
+1. Open the extension Settings (right-click icon → Options, or click the gear icon in the side panel).
+2. Configure your LLM Provider:
+   - **OpenRouter** (Claude 3.7 / 3.5 Sonnet, GPT-4o, etc.)
+   - **Groq** (Llama 3.3 70B)
+   - **OpenAI** (GPT-4o)
+   - **Ollama** (Local AI on `http://localhost:11434/v1`)
+   - **Custom** (any OpenAI-compatible endpoint)
+3. Choose your **Automation Mode**:
+   - `ASSISTED` (Default — AI fills safe fields; user reviews before submission)
+   - `AUTO-SAFE` (AI fills low-risk fields, high-risk fields pause for human input)
+   - `MANUAL` (AI suggests actions, user clicks each action)
+4. Upload your Resume in the Side Panel (PDF, DOCX, TXT, or MD).
 
-## Browser Agent Proxy (optional)
-
-To also allow external apps to control Chrome via REST API, run the Go relay server and set the port in **Settings → Browser Agent Proxy**. The extension will maintain a WebSocket connection to the relay alongside the agent subsystem.
-
-Default relay port: `12345`.
-
-## Permissions
-
-| Permission | Reason |
-|------------|--------|
-| `tabs` | Create and manage tabs |
-| `debugger` | Attach Chrome DevTools Protocol to tabs |
-| `alarms` | Drive scheduled task execution |
-| `scripting` | Inject scripts when needed |
-| `storage` | Save settings, tasks, and history |
-| `<all_urls>` | Navigate to any URL |
+---
 
 ## Architecture
 
 ```
-options.html / chat.html
-        ↓ chrome.runtime.sendMessage
-background.js (service worker)
-  ├── agent/runner.js     — LLM loop + tool dispatch
-  ├── agent/tools.js      — browser tools (navigate, eval, screenshot, fetch, cdp…)
-  ├── agent/llm.js        — OpenAI-compatible API client + context trimming
-  ├── agent/scheduler.js  — task CRUD, chrome.alarms, history storage
-  └── relay/              — CDP WebSocket bridge to Go relay server (optional)
+chrome-extension/
+├── manifest.json                  — MV3 manifest, sidePanel permission, default_path
+├── background.js                  — Service worker, tab registry, keepOpen protection
+├── chat.html / chat.js            — JobPilot AI Side Panel interface
+├── options.html / options.js      — Settings & Candidate Profile management
+│
+├── agent/
+│   ├── llm.js                     — Multi-provider client (OpenRouter, Groq, OpenAI, Ollama)
+│   ├── runner.js                  — Agent loop & tool dispatch
+│   ├── scheduler.js               — Task automation & alarm management
+│   └── tools.js                   — Low-level browser primitives + JobPilot AI tools
+│
+├── resume/
+│   ├── resume.js                  — chrome.storage.local persistence (jobpilotResume)
+│   ├── resume-parser.js           — PDF, DOCX, TXT, MD multi-format parser
+│   └── profile.js                 — Truthful profile extraction from resume
+│
+├── job/
+│   ├── job-analyzer.js            — Semantic DOM & JSON-LD JobPosting analyzer
+│   └── job-fit.js                 — AI Fit Estimate calculator
+│
+├── application/
+│   ├── form-analyzer.js           — DOM form field inspector & label resolver
+│   ├── form-filler.js             — Event-driven form filling & value readback
+│   ├── field-mapper.js            — Semantic mapping & HIGH_RISK_FIELDS rules
+│   ├── screening.js               — Conversational answers & cover letter generator
+│   ├── application-state.js       — Local applications tracker (jobpilotApplications)
+│   └── adapters/                  — ATS Adapters (Greenhouse, Lever, Ashby, Workable, Workday, Generic)
+│
+├── profile/
+│   └── profile.js                 — User profile management (jobpilotProfile)
+│
+├── ui/
+│   ├── components.js              — Modular card & modal renderers
+│   └── styles.css                 — Modern dark glassmorphic design system
+│
+└── vendor/
+    ├── pdfjs/                     — Bundled local pdf.min.js & worker
+    └── mammoth/                   — Bundled local mammoth.browser.min.js
 ```
-
-## Debugging
-
-1. Go to `chrome://extensions`.
-2. Find **Browser Agent** → click **Service worker**.
-3. Watch the Console for `[Agent]`, `[Relay]`, `[Tab]`, `[Debugger]` prefixed logs.

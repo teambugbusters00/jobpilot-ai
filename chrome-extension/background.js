@@ -99,6 +99,8 @@ function startTabChecker() {
   tabCheckInterval = setInterval(async () => {
     const now = Date.now()
     for (const [tabId, tab] of managedTabs.entries()) {
+      // The timeout cleaner MUST NOT automatically close tabs where tab.meta.keepOpen === true
+      if (tab.meta?.keepOpen) continue
       if (now - tab.lastActivity >= TAB_TIMEOUT_MS) {
         console.log(`[TabChecker] Tab ${tabId} idle, closing`)
         await closeTab(tabId, 'timeout')
@@ -339,8 +341,19 @@ async function relayDispatch(method, params) {
   }
 }
 
-chrome.action.onClicked.addListener(async () => {
-  chrome.runtime.openOptionsPage()
+// Configure side panel behavior if supported in Chrome
+if (chrome.sidePanel?.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {})
+}
+
+chrome.action.onClicked.addListener(async (tab) => {
+  if (chrome.sidePanel?.open && tab?.windowId) {
+    try {
+      await chrome.sidePanel.open({ windowId: tab.windowId })
+      return
+    } catch {}
+  }
+  chrome.tabs.create({ url: chrome.runtime.getURL('chat.html'), active: true })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -443,8 +456,8 @@ function runSessionTurn(sessionId, prompt) {
   session.updatedAt = Date.now()
 
   setBadge('agent')
-  setTitle(`Browser Agent — running "${session.taskName}"`)
-  console.log(`[Agent] Session ${sessionId} — new turn: "${prompt.slice(0, 60)}"`)
+  setTitle(`JobPilot AI — running "${session.taskName}"`)
+  console.log(`[JobPilot] Session ${sessionId} — new turn: "${prompt.slice(0, 60)}"`)
 
   ;(async () => {
     try {
@@ -511,7 +524,7 @@ function runSessionTurn(sessionId, prompt) {
       runningSessions.delete(sessionId)
       evictOldSessions()
       setBadge('off')
-      setTitle('Browser Agent')
+      setTitle('JobPilot AI')
     }
   })()
 }
@@ -738,5 +751,5 @@ chrome.runtime.onInstalled.addListener(() => {
     console.warn('[Init] Relay not available (agent works without relay):', err.message)
   }
   setBadge('off')
-  setTitle('Browser Agent')
+  setTitle('JobPilot AI')
 })()

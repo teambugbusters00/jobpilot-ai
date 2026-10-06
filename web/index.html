@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JobPilot AI — AI Copilot for Smarter Job Applications</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="vendor/pdfjs/pdf.min.js"></script>
+  <script src="vendor/mammoth/mammoth.browser.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand-wrapper" id="brand-home-btn">
+      <div class="brand-logo-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+        </svg>
+      </div>
+      <div class="brand-title-text">
+        JobPilot<span>AI</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-links">
+      <button class="nav-tab-btn active" data-tab="jobs">
+        <span>💼</span> Jobs
+      </button>
+      <button class="nav-tab-btn" data-tab="resume">
+        <span>📄</span> Resume
+      </button>
+      <button class="nav-tab-btn" data-tab="tracker">
+        <span>📊</span> Tracker (<span id="tracker-nav-count">0</span>)
+      </button>
+      <button class="nav-tab-btn" data-tab="profile">
+        <span>👤</span> Profile
+      </button>
+      <button class="nav-tab-btn" data-tab="copilot">
+        <span>🤖</span> Copilot
+      </button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="btn-open-settings" title="AI Settings">
+        <span>⚙️</span> Settings
+      </button>
+      <a href="jobpilot-ai-extension-v1.0.0.zip" download class="btn btn-brand btn-sm" title="Download Chrome Extension">
+        <span>🧩</span> Chrome Extension
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Workspace Views -->
+  <main class="main-content">
+
+    <!-- ── VIEW 1: JOBS BOARD (Jobright 2-Column Replica) ── -->
+    <div class="tab-view active" id="view-jobs">
+      <div class="jobs-layout">
+        
+        <!-- Left: Job List & Search -->
+        <aside class="jobs-list-pane">
+          <div class="jobs-search-bar">
+            <div class="search-input-wrapper">
+              <span class="search-icon-svg">🔍</span>
+              <input type="text" class="search-input" id="jobs-search-input" placeholder="Search title, tech, company..." />
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;color:var(--text-muted)"><strong id="jobs-total-count">0</strong> Positions</span>
+              <button class="btn btn-brand btn-sm" id="btn-open-add-job">
+                + Paste Any Job
+              </button>
+            </div>
+          </div>
+
+          <div class="jobs-list-scroll" id="jobs-list-container">
+            <!-- Dynamically populated -->
+          </div>
+        </aside>
+
+        <!-- Right: Selected Job Details & AI Tools -->
+        <section class="jobs-detail-pane" id="jobs-detail-container">
+          <!-- Dynamically populated by app.js -->
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ── VIEW 2: RESUME UPLOAD & PARSER ── -->
+    <div class="tab-view" id="view-resume">
+      <div class="full-page-view">
+        <div class="jobright-hero-card">
+          <div style="font-weight:800;font-size:16px;color:#fff;margin-bottom:4px">Candidate Resume</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Upload your resume. It parses locally and privately in your browser without sending your document to any third-party server.</div>
+          
+          <div id="web-resume-container">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 3: TRACKER ── -->
+    <div class="tab-view" id="view-tracker">
+      <div class="full-page-view">
+        <div class="jobright-hero-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-weight:800;font-size:16px;color:#fff">Applications Tracker</div>
+            <span class="pill-badge pill-badge-cyan" id="tracker-total-badge">0 Tracked</span>
+          </div>
+          
+          <!-- Filter pills -->
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="pill-badge pill-badge-green web-tracker-filter active" data-filter="all" style="cursor:pointer;border:none">All</button>
+            <button class="pill-badge pill-badge-gray web-tracker-filter" data-filter="liked" style="cursor:pointer;border:none">Liked ❤️</button>
+            <button class="pill-badge pill-badge-gray web-tracker-filter" data-filter="applied" style="cursor:pointer;border:none">Applied 🚀</button>
+          </div>
+
+          <div id="web-tracker-list" style="display:flex;flex-direction:column;gap:10px">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 4: PROFILE ── -->
+    <div class="tab-view" id="view-profile">
+      <div class="full-page-view">
+        <div class="jobright-hero-card">
+          <div style="font-weight:800;font-size:16px;color:#fff;margin-bottom:4px">Candidate Profile</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Verified personal background used for role tailoring and application autofilling.</div>
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Full Name</label>
+              <input type="text" id="prof-name" class="search-input" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Email Address</label>
+                <input type="text" id="prof-email" class="search-input" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Phone Number</label>
+                <input type="text" id="prof-phone" class="search-input" />
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Location / City</label>
+              <input type="text" id="prof-location" class="search-input" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">LinkedIn URL</label>
+                <input type="text" id="prof-linkedin" class="search-input" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">GitHub URL</label>
+                <input type="text" id="prof-github" class="search-input" />
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Portfolio Website</label>
+              <input type="text" id="prof-portfolio" class="search-input" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Target Role</label>
+                <input type="text" id="prof-role" class="search-input" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Work Authorization</label>
+                <input type="text" id="prof-workauth" class="search-input" />
+              </div>
+            </div>
+            <button class="btn btn-brand" id="btn-save-web-profile" style="align-self:flex-start;margin-top:6px">
+              Save Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 5: COPILOT ── -->
+    <div class="tab-view" id="view-copilot">
+      <div class="full-page-view" style="display:flex;flex-direction:column;height:100%">
+        <div class="jobright-hero-card" style="flex:1;display:flex;flex-direction:column;height:100%">
+          <div style="font-weight:800;font-size:16px;color:#fff;margin-bottom:4px">JobPilot AI Copilot</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Ask anything about job requirements, interview questions, or application strategies.</div>
+          
+          <div id="copilot-web-messages" style="flex:1;overflow-y:auto;background:rgba(0,0,0,0.2);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+            <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px">
+              Ask questions about the current job, company, or request tailored application answers.
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <input type="text" id="copilot-web-input" class="search-input" placeholder="Ask about this job or request answers..." style="flex:1" />
+            <button class="btn btn-brand" id="btn-copilot-web-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── MODAL 1: Customize Your Resume ── -->
+<div class="modal-overlay" id="modal-customize-resume">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">✨ Tailored Resume Bullets</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body" id="body-customize-resume">
+      <div style="text-align:center;padding:24px;color:var(--text-muted)">Generating tailored bullets...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Close</button>
+      <button class="btn btn-brand" id="btn-copy-tailored-resume">📋 Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL 2: Build Cover Letter ── -->
+<div class="modal-overlay" id="modal-cover-letter">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">✉️ Tailored Cover Letter</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body" id="body-cover-letter">
+      <div style="text-align:center;padding:24px;color:var(--text-muted)">Drafting cover letter...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Close</button>
+      <button class="btn btn-brand" id="btn-copy-cover-letter">📋 Copy Cover Letter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL 3: Analyze How Well You Fit ── -->
+<div class="modal-overlay" id="modal-fit-analysis">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">👍 AI Fit Analysis &amp; Gaps</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body" id="body-fit-analysis">
+      <!-- Populated dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-brand btn-close-modal">Got It</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL 4: Role Interview Prep ── -->
+<div class="modal-overlay" id="modal-interview-prep">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Role Interview Coaching &amp; Q&amp;A</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body" id="body-interview-prep">
+      <div style="text-align:center;padding:24px;color:var(--warning)">Generating interview questions...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Close</button>
+      <button class="btn btn-brand" id="btn-copy-interview-qa">📋 Copy Q&amp;A</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL 5: Insider Connection & Referral ── -->
+<div class="modal-overlay" id="modal-insider-referral">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">🤝 Insider Referral Message</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body" id="body-insider-referral">
+      <div style="text-align:center;padding:24px;color:var(--text-muted)">Drafting outreach note...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Close</button>
+      <button class="btn btn-brand" id="btn-copy-referral-msg">📋 Copy Message</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL 6: Add / Paste Any Job ── -->
+<div class="modal-overlay" id="modal-add-job">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">➕ Paste Any Job Description</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Job Title</label>
+        <input type="text" id="add-job-title" class="search-input" placeholder="e.g. Senior Frontend Engineer" />
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Company Name</label>
+        <input type="text" id="add-job-company" class="search-input" placeholder="e.g. OpenAI / Stripe / Google" />
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Job Description</label>
+        <textarea id="add-job-desc" class="search-input" rows="8" placeholder="Paste the job requirements, responsibilities, and qualifications here..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Cancel</button>
+      <button class="btn btn-brand" id="btn-confirm-add-job">Add &amp; Analyze Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL 7: Settings ── -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ AI Model Configuration</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Provider</label>
+        <select id="settings-provider" class="search-input">
+          <option value="openrouter">OpenRouter (Free Reasoning Model)</option>
+          <option value="groq">Groq (Ultra-Fast 0.3s)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Model</label>
+        <input type="text" id="settings-model" class="search-input" value="nvidia/nemotron-3.5-lightning:free" />
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">API Key</label>
+        <input type="password" id="settings-api-key" class="search-input" placeholder="API key..." />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Cancel</button>
+      <button class="btn btn-brand" id="btn-save-settings">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
