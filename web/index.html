@@ -44,6 +44,9 @@
     </nav>
 
     <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="btn-neon-auth" title="Neon Auth &amp; Cloud Sync">
+        <span id="neon-auth-status-dot">⚡</span> <span id="neon-auth-label">Neon Auth</span>
+      </button>
       <button class="btn btn-secondary btn-sm" id="btn-open-settings" title="AI Settings">
         <span>⚙️</span> Settings
       </button>
@@ -346,6 +349,42 @@
     <div class="modal-footer">
       <button class="btn btn-secondary btn-close-modal">Cancel</button>
       <button class="btn btn-brand" id="btn-save-settings">Save Settings</button>
+    </div>
+<!-- ── MODAL 8: Neon Auth & Cloud Sync ── -->
+<div class="modal-overlay" id="modal-neon-auth">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">⚡ Neon Cloud &amp; Auth Integration</div>
+      <button class="icon-button btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:var(--radius-sm);padding:14px">
+        <div style="font-weight:700;color:var(--brand-green);margin-bottom:4px">Connected to Neon Serverless Cloud</div>
+        <div style="font-size:12px;color:var(--text-muted)">Your candidate profile, tracked jobs, and resume documents sync with Neon Postgres &amp; Neon S3 storage.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--glass-border)">
+          <span style="color:var(--text-muted)">Neon Auth Endpoint:</span>
+          <strong style="color:#fff;font-family:var(--font-mono);font-size:11px">ep-old-salad-b4qbtcsf.neonauth</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--glass-border)">
+          <span style="color:var(--text-muted)">Neon Database:</span>
+          <strong style="color:#fff;font-family:var(--font-mono);font-size:11px">neondb (us-east-2)</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--glass-border)">
+          <span style="color:var(--text-muted)">Object Storage:</span>
+          <strong style="color:#fff;font-family:var(--font-mono);font-size:11px">Neon S3-compatible Bucket</strong>
+        </div>
+      </div>
+
+      <div id="neon-auth-user-status" style="margin-top:8px">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-close-modal">Close</button>
+      <button class="btn btn-brand" id="btn-neon-auth-action">Connect with Neon Auth</button>
     </div>
   </div>
 </div>

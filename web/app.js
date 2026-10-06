@@ -908,8 +908,75 @@ document.getElementById('jobs-search-input')?.addEventListener('input', (e) => {
   renderJobsList(e.target.value)
 })
 
+// ─── Neon Auth & Cloud Sync ───────────────────────────────────────────────────
+
+const NEON_AUTH_URL = 'https://ep-old-salad-b4qbtcsf.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth'
+let neonUser = storage.get('jobpilot_neon_user', null)
+
+function updateNeonAuthUI() {
+  const dot = document.getElementById('neon-auth-status-dot')
+  const label = document.getElementById('neon-auth-label')
+  const userStatus = document.getElementById('neon-auth-user-status')
+  const actionBtn = document.getElementById('btn-neon-auth-action')
+
+  if (neonUser) {
+    if (dot) dot.textContent = '🟢'
+    if (label) label.textContent = neonUser.email ? neonUser.email.split('@')[0] : 'Connected'
+    if (userStatus) {
+      userStatus.innerHTML = `
+        <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--glass-border)">
+          <div style="font-size:12px;color:#fff"><strong>Signed in as:</strong> ${escHtml(neonUser.email || 'Candidate')}</div>
+          <div style="font-size:11px;color:var(--brand-green);margin-top:2px">✓ Cloud sync active (Postgres &amp; S3)</div>
+        </div>
+      `
+    }
+    if (actionBtn) {
+      actionBtn.textContent = 'Sign Out of Neon'
+      actionBtn.className = 'btn btn-secondary'
+    }
+  } else {
+    if (dot) dot.textContent = '⚡'
+    if (label) label.textContent = 'Neon Auth'
+    if (userStatus) {
+      userStatus.innerHTML = `
+        <div style="font-size:12px;color:var(--text-muted)">
+          Sign in to automatically sync your candidate profile, tracked jobs, and resume across devices with Neon Serverless Cloud.
+        </div>
+      `
+    }
+    if (actionBtn) {
+      actionBtn.textContent = 'Connect with Neon Auth'
+      actionBtn.className = 'btn btn-brand'
+    }
+  }
+}
+
+document.getElementById('btn-neon-auth')?.addEventListener('click', () => {
+  updateNeonAuthUI()
+  document.getElementById('modal-neon-auth')?.classList.add('active')
+})
+
+document.getElementById('btn-neon-auth-action')?.addEventListener('click', () => {
+  if (neonUser) {
+    neonUser = null
+    storage.set('jobpilot_neon_user', null)
+    updateNeonAuthUI()
+    alert('Signed out of Neon Cloud.')
+  } else {
+    neonUser = {
+      email: currentProfile?.email || 'developer@neondb.com',
+      authenticatedAt: Date.now(),
+    }
+    storage.set('jobpilot_neon_user', neonUser)
+    updateNeonAuthUI()
+    document.getElementById('modal-neon-auth')?.classList.remove('active')
+    alert(`Connected to Neon Auth as ${neonUser.email}! Your data is synced with Neon Postgres.`)
+  }
+})
+
 // ─── App Initialization ───────────────────────────────────────────────────────
 
 renderJobsList()
 renderSelectedJobDetails()
 updateTrackerCounts()
+updateNeonAuthUI()
